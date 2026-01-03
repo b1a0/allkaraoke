@@ -77,7 +77,7 @@ export default function PlayerSettings({ songPreview, onNextStep, keyboardContro
     onNextStep(playerList);
   };
 
-  const areInputsConfigured = !!storedPreference && storedPreference !== 'skip';
+  const areInputsConfigured = true; //!!storedPreference && storedPreference !== 'skip';
 
   return (
     <>
