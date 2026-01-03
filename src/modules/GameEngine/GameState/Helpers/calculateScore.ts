@@ -13,8 +13,8 @@ const noteTypesMultipliers: DetailedScore = {
   rapstar: 0.5,
   star: 2,
   normal: 1,
-  perfect: 0.5,
-  vibrato: 0.25,
+  perfect: 0,
+  vibrato: 0,
 };
 
 const countsToBeats = (counts: DetailedScore): DetailedScore => ({
