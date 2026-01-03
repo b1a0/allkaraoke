@@ -39,14 +39,14 @@ const useSetTolerance = createPersistedState<number>('song_settings-tolerance-v2
 export default function GameSettings({ songPreview, onNextStep, keyboardControl, onExitKeyboardControl }: Props) {
   const [rememberedMode, setMode] = useSetGameMode(null);
   const mode = rememberedMode ?? (songPreview.tracksCount > 1 ? GAME_MODE.CO_OP : GAME_MODE.DUEL);
-  const [tolerance, setTolerance] = useSetTolerance(1);
+  const [tolerance, setTolerance] = useSetTolerance(0);
 
   const handleNextButton = () => {
     const singSetup = {
       id: v4(),
       players: [],
       mode,
-      tolerance: tolerance + 1,
+      tolerance: 0, //tolerance + 1,
     };
     onNextStep(singSetup);
   };
