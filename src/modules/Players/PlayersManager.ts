@@ -65,7 +65,7 @@ export class PlayerEntity {
 }
 
 class PlayersManager {
-  private minPlayerNumber = 2;
+  private minPlayerNumber = 1;
 
   private players: PlayerEntity[] = [];
   private requestingPromise: Promise<any> | null = null;
@@ -85,7 +85,7 @@ class PlayersManager {
     } else {
       this.players = [
         new PlayerEntity(0, { source: 'Dummy', deviceId: 'default', channel: 0 }),
-        new PlayerEntity(1, { source: 'Dummy', deviceId: 'default', channel: 1 }),
+        //new PlayerEntity(1, { source: 'Dummy', deviceId: 'default', channel: 1 }),
       ];
     }
 

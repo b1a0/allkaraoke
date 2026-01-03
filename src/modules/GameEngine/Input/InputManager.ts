@@ -1,5 +1,5 @@
 import DrawingTestInput from 'modules/GameEngine/Input/DrawingTestInput';
-import dummyInput from 'modules/GameEngine/Input/DummyInput';
+import dummyFileInput from 'modules/GameEngine/Input/DummyFileInput';
 import InputInterface from 'modules/GameEngine/Input/Interface';
 import MicInput from 'modules/GameEngine/Input/MultiMicInput';
 import RemoteMicInput from 'modules/GameEngine/Input/RemoteMicInput';
@@ -93,7 +93,7 @@ class InputManager {
     // @ts-expect-error only-for-testing input not included in the typings
     if (sourceName === DrawingTestInputSource.inputName) return DrawingTestInput;
     if (sourceName === RemoteMicrophoneInputSource.inputName) return RemoteMicInput;
-    return dummyInput;
+    return dummyFileInput;
   };
 }
 
