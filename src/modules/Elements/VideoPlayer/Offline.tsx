@@ -3,7 +3,7 @@ import { ComponentProps, ForwardedRef, forwardRef } from 'react';
 import DirectVideo from 'modules/Elements/VideoPlayer/DirectVideo';
 import Youtube, { VideoPlayerRef } from './Youtube';
 import dummyLongVideo from './dummy-video-long.webm';
-import dummyVideo from './dummy-video.webm';
+import dummyVideo from './randomCEF.mp3';
 
 type Props = ComponentProps<typeof Youtube>;
 
