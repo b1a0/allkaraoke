@@ -140,7 +140,7 @@ export class DummyFileInput implements InputInterface {
     events.micMonitoringStopped.dispatch();
   };
 
-  public getInputLag = () => 0; //180;
+  public getInputLag = () => 100; //180;
 
   private calculateVolume(input: Float32Array) {
     let i;
