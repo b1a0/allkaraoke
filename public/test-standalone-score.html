@@ -13,9 +13,26 @@
 </head>
 <body>
   <h1>Standalone Score Calculation Test</h1>
-  <p>This page tests the standalone score calculation with the randomCEF MP3 and ultrastar.txt files.</p>
+  <p>This page tests the standalone score calculation with MP3 and ultrastar.txt files.</p>
 
-  <button id="runTest">Run Score Calculation Test</button>
+  <div style="margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
+    <h3>Upload Files</h3>
+    <div style="margin: 10px 0;">
+      <label for="mp3Upload"><strong>MP3 File:</strong></label><br>
+      <input type="file" id="mp3Upload" accept=".mp3,audio/mpeg" style="margin-top: 5px;">
+      <span id="mp3Status" style="margin-left: 10px; color: #666;"></span>
+    </div>
+    <div style="margin: 10px 0;">
+      <label for="txtUpload"><strong>Ultrastar TXT File:</strong></label><br>
+      <input type="file" id="txtUpload" accept=".txt" style="margin-top: 5px;">
+      <span id="txtStatus" style="margin-left: 10px; color: #666;"></span>
+    </div>
+  </div>
+
+  <div style="margin: 20px 0;">
+    <button id="runTest">Run Score Calculation Test</button>
+    <button id="runDefault" style="margin-left: 10px;">Test with Default Files (randomCEF)</button>
+  </div>
 
   <div id="output" class="result"></div>
 
@@ -25,6 +42,31 @@
     const { default: convertTxtToSong } = await import('/src/modules/Songs/utils/convertTxtToSong.ts');
 
     const output = document.getElementById('output');
+    const mp3Upload = document.getElementById('mp3Upload');
+    const txtUpload = document.getElementById('txtUpload');
+    const mp3Status = document.getElementById('mp3Status');
+    const txtStatus = document.getElementById('txtStatus');
+
+    let uploadedMp3 = null;
+    let uploadedTxt = null;
+
+    mp3Upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        uploadedMp3 = file;
+        mp3Status.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        mp3Status.style.color = 'green';
+      }
+    });
+
+    txtUpload.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        uploadedTxt = await file.text();
+        txtStatus.textContent = `Selected: ${file.name}`;
+        txtStatus.style.color = 'green';
+      }
+    });
 
     function log(message, isError = false) {
       const div = document.createElement('div');
@@ -39,15 +81,12 @@
       output.appendChild(pre);
     }
 
-    document.getElementById('runTest').addEventListener('click', async () => {
+    async function runScoreCalculation(mp3Source, txtContent) {
       output.innerHTML = '<p>Running test...</p>';
 
       try {
-        // Load the ultrastar.txt
-        log('Loading ultrastar.txt...');
-        const txtResponse = await fetch('/tests/fixtures/songs/randomCEF_ultrastar_ontime.txt');
-        if (!txtResponse.ok) throw new Error('Failed to load ultrastar.txt');
-        const txtContent = await txtResponse.text();
+        // Parse the ultrastar.txt
+        log('Parsing ultrastar.txt...');
         const song = convertTxtToSong(txtContent);
 
         log(`Song loaded: ${song.title} by ${song.artist}`);
@@ -60,12 +99,12 @@
 
         // Calculate score from MP3
         log('');
-        log('Calculating score from /randomCEF_nodrums.mp3...');
+        log('Calculating score from MP3...');
         log('This may take a moment for pitch detection...');
 
         const startTime = performance.now();
         const result = await calculateScoreFromMp3(
-          '/randomCEF_nodrums.mp3',
+          mp3Source,
           song,
           0,    // track number
           2,    // tolerance (semitones)
@@ -117,6 +156,29 @@
 
       } catch (error) {
         log(`Error: ${error.message}`, true);
+        console.error(error);
+      }
+    }
+
+    // Run with uploaded files
+    document.getElementById('runTest').addEventListener('click', async () => {
+      if (!uploadedMp3 || !uploadedTxt) {
+        output.innerHTML = '<p class="error">Please upload both an MP3 file and an Ultrastar TXT file first.</p>';
+        return;
+      }
+      await runScoreCalculation(uploadedMp3, uploadedTxt);
+    });
+
+    // Run with default files
+    document.getElementById('runDefault').addEventListener('click', async () => {
+      output.innerHTML = '<p>Loading default files...</p>';
+      try {
+        const txtResponse = await fetch('/tests/fixtures/songs/randomCEF_ultrastar_ontime.txt');
+        if (!txtResponse.ok) throw new Error('Failed to load default ultrastar.txt');
+        const txtContent = await txtResponse.text();
+        await runScoreCalculation('/randomCEF_nodrums.mp3', txtContent);
+      } catch (error) {
+        output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
         console.error(error);
       }
     });
