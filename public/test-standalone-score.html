@@ -23,9 +23,19 @@
       <span id="mp3Status" style="margin-left: 10px; color: #666;"></span>
     </div>
     <div style="margin: 10px 0;">
-      <label for="txtUpload"><strong>Ultrastar TXT File:</strong></label><br>
-      <input type="file" id="txtUpload" accept=".txt" style="margin-top: 5px;">
-      <span id="txtStatus" style="margin-left: 10px; color: #666;"></span>
+      <label><strong>Song Notes (choose one):</strong></label><br>
+      <div style="display: flex; gap: 20px; margin-top: 5px;">
+        <div>
+          <label for="txtUpload">Ultrastar TXT:</label><br>
+          <input type="file" id="txtUpload" accept=".txt" style="margin-top: 5px;">
+        </div>
+        <div style="display: flex; align-items: center; font-weight: bold;">OR</div>
+        <div>
+          <label for="midiUpload">MIDI File:</label><br>
+          <input type="file" id="midiUpload" accept=".mid,.midi" style="margin-top: 5px;">
+        </div>
+      </div>
+      <span id="songStatus" style="display: block; margin-top: 5px; color: #666;"></span>
     </div>
   </div>
 
@@ -40,15 +50,18 @@
     // These imports work when running via Vite dev server (pnpm start:mock)
     const { calculateScoreFromMp3, sumDetailedScore } = await import('/src/modules/GameEngine/GameState/Helpers/standaloneScoreCalculation.ts');
     const { default: convertTxtToSong } = await import('/src/modules/Songs/utils/convertTxtToSong.ts');
+    const { convertMidiToSong, getMidiInfo } = await import('/src/modules/utils/parseMidiToSong.ts');
 
     const output = document.getElementById('output');
     const mp3Upload = document.getElementById('mp3Upload');
     const txtUpload = document.getElementById('txtUpload');
+    const midiUpload = document.getElementById('midiUpload');
     const mp3Status = document.getElementById('mp3Status');
-    const txtStatus = document.getElementById('txtStatus');
+    const songStatus = document.getElementById('songStatus');
 
     let uploadedMp3 = null;
-    let uploadedTxt = null;
+    let uploadedSong = null; // Can be from TXT or MIDI
+    let songSource = null; // 'txt' or 'midi'
 
     mp3Upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -62,9 +75,33 @@
     txtUpload.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) {
-        uploadedTxt = await file.text();
-        txtStatus.textContent = `Selected: ${file.name}`;
-        txtStatus.style.color = 'green';
+        const txtContent = await file.text();
+        uploadedSong = convertTxtToSong(txtContent);
+        songSource = 'txt';
+        songStatus.textContent = `Ultrastar loaded: ${uploadedSong.title} by ${uploadedSong.artist} (${uploadedSong.tracks[0].sections.flatMap(s => s.type === 'notes' ? s.notes : []).length} notes)`;
+        songStatus.style.color = 'green';
+        // Clear MIDI selection
+        midiUpload.value = '';
+      }
+    });
+
+    midiUpload.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const arrayBuffer = await file.arrayBuffer();
+        try {
+          const info = getMidiInfo(arrayBuffer);
+          uploadedSong = convertMidiToSong(arrayBuffer, file.name.replace(/\.(mid|midi)$/i, ''), 'MIDI');
+          songSource = 'midi';
+          songStatus.textContent = `MIDI loaded: ${info.noteCount} notes, ${(info.durationMs / 1000).toFixed(1)}s, ${info.bpm.toFixed(1)} BPM`;
+          songStatus.style.color = 'green';
+          // Clear TXT selection
+          txtUpload.value = '';
+        } catch (err) {
+          songStatus.textContent = `Error parsing MIDI: ${err.message}`;
+          songStatus.style.color = 'red';
+          uploadedSong = null;
+        }
       }
     });
 
@@ -81,13 +118,11 @@
       output.appendChild(pre);
     }
 
-    async function runScoreCalculation(mp3Source, txtContent) {
+    async function runScoreCalculation(mp3Source, song, sourceType = 'txt') {
       output.innerHTML = '<p>Running test...</p>';
 
       try {
-        // Parse the ultrastar.txt
-        log('Parsing ultrastar.txt...');
-        const song = convertTxtToSong(txtContent);
+        log(`Song source: ${sourceType === 'midi' ? 'MIDI file' : 'Ultrastar TXT'}`);
 
         log(`Song loaded: ${song.title} by ${song.artist}`);
         log(`BPM: ${song.bpm}, GAP: ${song.gap}`);
@@ -162,11 +197,11 @@
 
     // Run with uploaded files
     document.getElementById('runTest').addEventListener('click', async () => {
-      if (!uploadedMp3 || !uploadedTxt) {
-        output.innerHTML = '<p class="error">Please upload both an MP3 file and an Ultrastar TXT file first.</p>';
+      if (!uploadedMp3 || !uploadedSong) {
+        output.innerHTML = '<p class="error">Please upload an MP3 file and either an Ultrastar TXT or MIDI file first.</p>';
         return;
       }
-      await runScoreCalculation(uploadedMp3, uploadedTxt);
+      await runScoreCalculation(uploadedMp3, uploadedSong, songSource);
     });
 
     // Run with default files
@@ -176,7 +211,8 @@
         const txtResponse = await fetch('/tests/fixtures/songs/randomCEF_ultrastar_ontime.txt');
         if (!txtResponse.ok) throw new Error('Failed to load default ultrastar.txt');
         const txtContent = await txtResponse.text();
-        await runScoreCalculation('/randomCEF_nodrums.mp3', txtContent);
+        const defaultSong = convertTxtToSong(txtContent);
+        await runScoreCalculation('/randomCEF_nodrums.mp3', defaultSong, 'txt');
       } catch (error) {
         output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
         console.error(error);
