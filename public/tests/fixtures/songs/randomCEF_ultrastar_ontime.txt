@@ -1,0 +1,16 @@
+#TITLE:randomCEF
+#ARTIST:Audinom
+#YEAR:2025
+#LANGUAGE:English
+#BPM:15
+#GAP:0
+#ALLKARAOKE_REALBPM:60
+: 8 1 48 la
+- 9 11
+: 12 1 53 la
+- 13 15
+: 16 1 52 la
+- 17 19
+: 20 1 48 la
+- 21 23
+E

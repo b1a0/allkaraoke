@@ -1,15 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   calcDistanceBetweenPitches,
   calcDistanceStandalone,
   calculateDetailedScoreDataStandalone,
   calculateScoreFromFrequencies,
+  calculateScoreFromMp3,
   convertFrequencyRecordsToPlayerNotes,
+  decodeAudioFile,
+  detectPitchesFromSamples,
   sumDetailedScore,
 } from './standaloneScoreCalculation';
 import { generateNote, generateSection, generateSong } from 'modules/utils/testUtils';
 import { FrequencyRecord, Song } from 'interfaces';
 import pitchToFrequency from 'modules/utils/pitchToFrequency';
+import convertTxtToSong from 'modules/Songs/utils/convertTxtToSong';
 
 describe('standaloneScoreCalculation', () => {
   describe('calcDistanceBetweenPitches', () => {
@@ -164,5 +170,84 @@ describe('standaloneScoreCalculation', () => {
       expect(result.score).toBe(0);
       expect(result.playerNotes.length).toBe(0);
     });
+  });
+
+  describe('randomCEF integration test', () => {
+    it('loads and parses the ultrastar.txt correctly', () => {
+      // Read the ultrastar.txt file
+      const txtPath = path.resolve(__dirname, '../../../../../tests/fixtures/songs/randomCEF_ultrastar_ontime.txt');
+      const txtContent = fs.readFileSync(txtPath, 'utf-8');
+      const song = convertTxtToSong(txtContent);
+
+      expect(song.title).toBe('randomCEF');
+      expect(song.artist).toBe('Audinom');
+      expect(song.bpm).toBe(15);
+      expect(song.gap).toBe(0);
+
+      // Check notes
+      const notes = song.tracks[0].sections.flatMap(s => s.type === 'notes' ? s.notes : []);
+      expect(notes.length).toBe(4);
+      expect(notes[0].pitch).toBe(48);
+      expect(notes[1].pitch).toBe(53);
+      expect(notes[2].pitch).toBe(52);
+      expect(notes[3].pitch).toBe(48);
+    });
+
+    it('calculates score from simulated frequency records matching randomCEF', () => {
+      // Read the ultrastar.txt file
+      const txtPath = path.resolve(__dirname, '../../../../../tests/fixtures/songs/randomCEF_ultrastar_ontime.txt');
+      const txtContent = fs.readFileSync(txtPath, 'utf-8');
+      const song = convertTxtToSong(txtContent);
+
+      // BPM 15, bar 4 (default) -> beatLength = (60 / 15 / 4) * 1000 = 1000ms per beat
+      // Notes are at beats 8, 12, 16, 20 with length 1 each
+      // So notes are at 8000ms, 12000ms, 16000ms, 20000ms
+
+      const notes = song.tracks[0].sections.flatMap(s => s.type === 'notes' ? s.notes : []);
+
+      // Create frequency records that match the notes perfectly
+      const frequencyRecords: FrequencyRecord[] = [];
+      for (const note of notes) {
+        const frequency = pitchToFrequency(note.pitch);
+        const beatLengthMs = 1000; // (60 / 15 / 4) * 1000
+        const startMs = note.start * beatLengthMs;
+
+        // Add frequency samples during the note (accounting for 100ms input lag)
+        for (let t = 0; t < note.length * beatLengthMs; t += 50) {
+          frequencyRecords.push({
+            timestamp: startMs + t + 100, // +100 for input lag
+            frequency,
+          });
+        }
+      }
+
+      const result = calculateScoreFromFrequencies(frequencyRecords, song, 0, 2, 100);
+
+      console.log('Score:', result.score);
+      console.log('Max possible:', sumDetailedScore(result.maxCounts) * result.pointsPerBeat);
+      console.log('Player notes count:', result.playerNotes.length);
+      console.log('Counts:', result.counts);
+      console.log('Max counts:', result.maxCounts);
+
+      // Should have a good score since we simulated perfect pitch
+      expect(result.score).toBeGreaterThan(0);
+      expect(result.playerNotes.length).toBe(4); // One player note per song note
+    });
+
+    // Note: The full MP3 integration test requires AudioContext which is only available in browser.
+    // Use the browser-based test runner or the example in the comments below to test with actual MP3.
+    //
+    // Example browser usage:
+    // ```
+    // import { calculateScoreFromMp3 } from './standaloneScoreCalculation';
+    // import convertTxtToSong from 'modules/Songs/utils/convertTxtToSong';
+    //
+    // const txtResponse = await fetch('/tests/fixtures/songs/randomCEF_ultrastar_ontime.txt');
+    // const txtContent = await txtResponse.text();
+    // const song = convertTxtToSong(txtContent);
+    //
+    // const result = await calculateScoreFromMp3('/randomCEF_nodrums.mp3', song, 0, 2, 100, 2048);
+    // console.log('Score:', result.score);
+    // ```
   });
 });

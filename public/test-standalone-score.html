@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Standalone Score Calculation Test</title>
+  <style>
+    body { font-family: monospace; padding: 20px; max-width: 800px; margin: 0 auto; }
+    pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    button { padding: 10px 20px; font-size: 16px; margin: 10px 0; cursor: pointer; }
+    .result { margin-top: 20px; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <h1>Standalone Score Calculation Test</h1>
+  <p>This page tests the standalone score calculation with the randomCEF MP3 and ultrastar.txt files.</p>
+
+  <button id="runTest">Run Score Calculation Test</button>
+
+  <div id="output" class="result"></div>
+
+  <script type="module">
+    // These imports work when running via Vite dev server (pnpm start:mock)
+    const { calculateScoreFromMp3, sumDetailedScore } = await import('/src/modules/GameEngine/GameState/Helpers/standaloneScoreCalculation.ts');
+    const { default: convertTxtToSong } = await import('/src/modules/Songs/utils/convertTxtToSong.ts');
+
+    const output = document.getElementById('output');
+
+    function log(message, isError = false) {
+      const div = document.createElement('div');
+      div.className = isError ? 'error' : '';
+      div.textContent = message;
+      output.appendChild(div);
+    }
+
+    function logPre(obj) {
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(obj, null, 2);
+      output.appendChild(pre);
+    }
+
+    document.getElementById('runTest').addEventListener('click', async () => {
+      output.innerHTML = '<p>Running test...</p>';
+
+      try {
+        // Load the ultrastar.txt
+        log('Loading ultrastar.txt...');
+        const txtResponse = await fetch('/tests/fixtures/songs/randomCEF_ultrastar_ontime.txt');
+        if (!txtResponse.ok) throw new Error('Failed to load ultrastar.txt');
+        const txtContent = await txtResponse.text();
+        const song = convertTxtToSong(txtContent);
+
+        log(`Song loaded: ${song.title} by ${song.artist}`);
+        log(`BPM: ${song.bpm}, GAP: ${song.gap}`);
+
+        const notes = song.tracks[0].sections.flatMap(s => s.type === 'notes' ? s.notes : []);
+        log(`Notes in track 0: ${notes.length}`);
+        log('Notes:');
+        logPre(notes.map(n => ({ start: n.start, length: n.length, pitch: n.pitch, lyrics: n.lyrics })));
+
+        // Calculate score from MP3
+        log('');
+        log('Calculating score from /randomCEF_nodrums.mp3...');
+        log('This may take a moment for pitch detection...');
+
+        const startTime = performance.now();
+        const result = await calculateScoreFromMp3(
+          '/randomCEF_nodrums.mp3',
+          song,
+          0,    // track number
+          2,    // tolerance (semitones)
+          100,  // input lag ms
+          2048  // fft size
+        );
+        const endTime = performance.now();
+
+        log(`Processing time: ${((endTime - startTime) / 1000).toFixed(2)}s`);
+        log('');
+        log('=== RESULTS ===', false);
+        log(`Score: ${result.score.toFixed(0)} / ${(sumDetailedScore(result.maxCounts) * result.pointsPerBeat).toFixed(0)} (${((result.score / (sumDetailedScore(result.maxCounts) * result.pointsPerBeat)) * 100).toFixed(1)}%)`);
+        log(`Frequency records: ${result.frequencyRecords.length}`);
+        log(`Player notes: ${result.playerNotes.length}`);
+        log(`Points per beat: ${result.pointsPerBeat.toFixed(2)}`);
+
+        log('');
+        log('Counts:');
+        logPre(result.counts);
+
+        log('Max counts:');
+        logPre(result.maxCounts);
+
+        if (result.playerNotes.length > 0) {
+          log('');
+          log('Player notes:');
+          logPre(result.playerNotes.map(pn => ({
+            start: pn.start.toFixed(2),
+            length: pn.length.toFixed(2),
+            distance: pn.distance,
+            notePitch: pn.note.pitch,
+            noteStart: pn.note.start,
+            isPerfect: pn.isPerfect,
+            vibrato: pn.vibrato
+          })));
+        }
+
+        // Also show some frequency records for debugging
+        log('');
+        log('Sample frequency records (first 20 non-zero):');
+        const nonZeroFreqs = result.frequencyRecords.filter(f => f.frequency > 0).slice(0, 20);
+        logPre(nonZeroFreqs.map(f => ({
+          timestamp: f.timestamp.toFixed(1) + 'ms',
+          frequency: f.frequency.toFixed(1) + 'Hz'
+        })));
+
+        log('');
+        log('Test completed successfully!', false);
+
+      } catch (error) {
+        log(`Error: ${error.message}`, true);
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>
