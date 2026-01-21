@@ -21,8 +21,7 @@ const noteTypesMultipliers: DetailedScore = {
 };
 
 // Pitch detection helpers
-const pitchFromFrequency = (freq: number) =>
-  Math.round(12 * (Math.log(freq / MIDDLEA) / Math.log(2))) + SEMITONE;
+const pitchFromFrequency = (freq: number) => Math.round(12 * (Math.log(freq / MIDDLEA) / Math.log(2))) + SEMITONE;
 
 const getDistanceInCents = (noteFreq: number, freq: number) =>
   Math.floor((1200 * Math.log(freq / noteFreq)) / Math.log(2));
@@ -167,7 +166,9 @@ function appendFrequencyToPlayerNotesStandalone(
 /**
  * Decode an MP3 file to PCM audio samples.
  */
-export async function decodeAudioFile(fileOrUrl: File | string): Promise<{ samples: Float32Array; sampleRate: number }> {
+export async function decodeAudioFile(
+  fileOrUrl: File | string,
+): Promise<{ samples: Float32Array; sampleRate: number }> {
   let arrayBuffer: ArrayBuffer;
 
   if (typeof fileOrUrl === 'string') {
@@ -332,7 +333,7 @@ export function calculateDetailedScoreDataStandalone(
  * @param mp3FileOrUrl - The MP3 file (as File object) or URL to the MP3 file
  * @param song - The song object (converted from ultrastar.txt)
  * @param trackNumber - The track number to score against (default: 0)
- * @param tolerance - The pitch tolerance in semitones (default: 2)
+ * @param tolerance - The pitch tolerance in semitones (default: 0)
  * @param inputLagMs - Input lag compensation in milliseconds (default: 100)
  * @param fftSize - FFT size for pitch detection (default: 2048)
  * @returns Promise containing score results
@@ -341,7 +342,7 @@ export async function calculateScoreFromMp3(
   mp3FileOrUrl: File | string,
   song: Song,
   trackNumber: number = 0,
-  tolerance: number = 2,
+  tolerance: number = 0,
   inputLagMs: number = 100,
   fftSize: number = 2048,
 ): Promise<StandaloneScoreResult> {
@@ -352,13 +353,7 @@ export async function calculateScoreFromMp3(
   const frequencyRecords = await detectPitchesFromSamples(samples, sampleRate, fftSize);
 
   // Step 3: Convert frequency records to player notes
-  const playerNotes = convertFrequencyRecordsToPlayerNotes(
-    frequencyRecords,
-    song,
-    trackNumber,
-    tolerance,
-    inputLagMs,
-  );
+  const playerNotes = convertFrequencyRecordsToPlayerNotes(frequencyRecords, song, trackNumber, tolerance, inputLagMs);
 
   // Step 4: Calculate score
   const track = song.tracks[trackNumber];
@@ -382,16 +377,10 @@ export function calculateScoreFromFrequencies(
   frequencyRecords: FrequencyRecord[],
   song: Song,
   trackNumber: number = 0,
-  tolerance: number = 2,
+  tolerance: number = 0,
   inputLagMs: number = 100,
 ): StandaloneScoreResult {
-  const playerNotes = convertFrequencyRecordsToPlayerNotes(
-    frequencyRecords,
-    song,
-    trackNumber,
-    tolerance,
-    inputLagMs,
-  );
+  const playerNotes = convertFrequencyRecordsToPlayerNotes(frequencyRecords, song, trackNumber, tolerance, inputLagMs);
 
   const track = song.tracks[trackNumber];
   const [pointsPerBeat, counts, maxCounts] = calculateDetailedScoreDataStandalone(playerNotes, track);
