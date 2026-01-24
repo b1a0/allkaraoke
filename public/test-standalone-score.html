@@ -103,7 +103,7 @@
         const notes = song.tracks[0].sections.flatMap(s => s.type === 'notes' ? s.notes : []);
         log(`Notes in track 0: ${notes.length}`);
         log('Notes:');
-        logPre(notes.map(n => ({ start: n.start, length: n.length, pitch: n.pitch, lyrics: n.lyrics })));
+        logPre(notes.map(n => ({ start: n.start, length: n.length, pitch: n.pitch, noteName: n.noteName, lyrics: n.lyrics })));
 
         // Calculate score from MP3
         log('');
@@ -144,6 +144,7 @@
             length: pn.length.toFixed(2),
             distance: pn.distance,
             notePitch: pn.note.pitch,
+            noteName: pn.note.noteName,
             noteStart: pn.note.start,
             isPerfect: pn.isPerfect,
             vibrato: pn.vibrato

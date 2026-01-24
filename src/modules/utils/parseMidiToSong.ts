@@ -1,7 +1,17 @@
-import { Note, NotesSection, Song, SongTrack } from 'interfaces';
+import { songBeat, NoteType, NotesSection, Song, SongTrack } from 'interfaces';
+
+export interface Note {
+  start: songBeat;
+  length: number;
+  pitch: number;
+  noteName: string;
+  type: NoteType;
+  lyrics: string;
+}
 
 interface MidiNote {
   pitch: number;
+  noteName: string;
   startTicks: number;
   durationTicks: number;
   channel: number;
@@ -11,6 +21,19 @@ interface MidiParseResult {
   notes: MidiNote[];
   ticksPerBeat: number;
   tempoMicroseconds: number; // microseconds per beat
+}
+
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+function midiToNoteName(midi: number): string {
+  if (!Number.isInteger(midi) || midi < 0 || midi > 127) {
+    throw new Error('MIDI note must be an integer between 0 and 127');
+  }
+
+  const noteIndex = midi % 12;
+  const octave = Math.floor(midi / 12) - 1;
+
+  return `${NOTE_NAMES[noteIndex]}${octave}`;
 }
 
 /**
@@ -25,7 +48,7 @@ function parseMidiFile(arrayBuffer: ArrayBuffer): MidiParseResult {
     data.getUint8(offset),
     data.getUint8(offset + 1),
     data.getUint8(offset + 2),
-    data.getUint8(offset + 3)
+    data.getUint8(offset + 3),
   );
   offset += 4;
 
@@ -57,7 +80,7 @@ function parseMidiFile(arrayBuffer: ArrayBuffer): MidiParseResult {
       data.getUint8(offset),
       data.getUint8(offset + 1),
       data.getUint8(offset + 2),
-      data.getUint8(offset + 3)
+      data.getUint8(offset + 3),
     );
     offset += 4;
 
@@ -116,6 +139,7 @@ function parseMidiFile(arrayBuffer: ArrayBuffer): MidiParseResult {
           if (activeNote) {
             allNotes.push({
               pitch: activeNote.pitch,
+              noteName: midiToNoteName(activeNote.pitch),
               startTicks: activeNote.startTicks,
               durationTicks: currentTick - activeNote.startTicks,
               channel: activeNote.channel,
@@ -132,6 +156,7 @@ function parseMidiFile(arrayBuffer: ArrayBuffer): MidiParseResult {
         if (activeNote) {
           allNotes.push({
             pitch: activeNote.pitch,
+            noteName: midiToNoteName(activeNote.pitch),
             startTicks: activeNote.startTicks,
             durationTicks: currentTick - activeNote.startTicks,
             channel: activeNote.channel,
@@ -166,9 +191,7 @@ function parseMidiFile(arrayBuffer: ArrayBuffer): MidiParseResult {
         if (metaType === 0x51 && metaLength === 3) {
           // Tempo
           tempoMicroseconds =
-            (data.getUint8(offset) << 16) |
-            (data.getUint8(offset + 1) << 8) |
-            data.getUint8(offset + 2);
+            (data.getUint8(offset) << 16) | (data.getUint8(offset + 1) << 8) | data.getUint8(offset + 2);
         }
 
         offset += metaLength;
@@ -228,6 +251,7 @@ export function convertMidiToSong(
     start: Math.round(midiNote.startTicks * ticksToBeats),
     length: Math.max(1, Math.round(midiNote.durationTicks * ticksToBeats)),
     pitch: midiNote.pitch,
+    noteName: midiNote.noteName,
     type: 'normal' as const,
     lyrics: `~`, // No lyrics in MIDI
   }));
