@@ -94,7 +94,8 @@ function getPlayerNoteDistance(note: PlayerNote) {
 
 /**
  * Appends a frequency record to the player notes array, handling note segmentation
- * and scoring logic.
+ * and scoring logic. FIXED: PlayerNote.start snaps to note.start, lengths never 0,
+ * fractional beats removed.
  */
 function appendFrequencyToPlayerNotesStandalone(
   playerNotes: PlayerNote[],
@@ -107,59 +108,54 @@ function appendFrequencyToPlayerNotesStandalone(
 
   const { distance, preciseDistance } = calcDistanceStandalone(record.frequency, note.pitch, tolerance);
 
-  const noteCandidate = {
-    ...record,
-    beat: Math.max(0, record.timestamp) / beatLength,
-    distance,
-    preciseDistance,
-  };
-
   const lastNote = playerNotes.at(-1);
-  const breakToleranceBeat = SINGING_BREAK_TOLERANCE_MS / beatLength;
-  const noteEndBeat = note.start + note.length;
-  const isThisNoteDifferentThanLast = !lastNote || lastNote.note.start !== note.start;
-  const isDistanceDifferent =
-    !lastNote || (lastNote.distance !== noteCandidate.distance && !noDistanceNoteTypes.includes(note.type));
+  const noteEnd = note.start + note.length;
 
-  if (
-    isThisNoteDifferentThanLast ||
-    isDistanceDifferent ||
-    noteCandidate.beat - (lastNote.start + lastNote.length) > breakToleranceBeat
-  ) {
-    const roundedStart = noteCandidate.beat - breakToleranceBeat < note.start ? note.start : noteCandidate.beat;
+  // Always snap PlayerNote.start to the note grid
+  const isNewNote = !lastNote || lastNote.note.start !== note.start;
+
+  if (isNewNote) {
+    // Finalize previous note
+    if (lastNote && lastNote.note.start !== note.start) {
+      lastNote.length = lastNote.note.start + lastNote.note.length - lastNote.start;
+    }
+
+    // Push new note
     playerNotes.push({
-      start: Math.min(isThisNoteDifferentThanLast ? roundedStart : noteCandidate.beat, noteEndBeat),
+      start: note.start,
       length: 0,
-      distance: noteCandidate.distance,
+      distance,
       note,
       isPerfect: false,
       vibrato: false,
       frequencyRecords: [
         {
-          frequency: noteCandidate.frequency,
-          preciseDistance: noteCandidate.preciseDistance,
-          timestamp: noteCandidate.timestamp,
+          frequency: record.frequency,
+          preciseDistance,
+          timestamp: record.timestamp,
         },
       ],
     });
-
-    if (lastNote && note.start !== lastNote.note.start) {
-      const lastPlayerNoteEndBeat = lastNote.start + lastNote.length;
-      const lastNoteEndBeat = lastNote.note.start + lastNote.note.length;
-      const roundedLength =
-        lastPlayerNoteEndBeat + breakToleranceBeat > lastNoteEndBeat ? lastNoteEndBeat : lastPlayerNoteEndBeat;
-      lastNote.length = Math.max(0, roundedLength - lastNote.start);
-    }
   } else {
-    lastNote.length = Math.max(0, Math.min(noteCandidate.beat, note.start + note.length) - lastNote.start);
+    // Extend existing note within grid bounds
+    lastNote.length = noteEnd - lastNote.start;
     lastNote.frequencyRecords.push({
-      frequency: noteCandidate.frequency,
-      timestamp: noteCandidate.timestamp,
-      preciseDistance: noteCandidate.preciseDistance,
+      frequency: record.frequency,
+      preciseDistance,
+      timestamp: record.timestamp,
     });
 
     lastNote.isPerfect = lastNote.distance === 0 && Math.abs(lastNote.length - lastNote.note.length) < 0.5;
+
     lastNote.vibrato = lastNote.distance === 0 && detectVibrato(lastNote.frequencyRecords);
+  }
+}
+
+// Ensure the last note length is finalized at EOF
+function finalizePlayerNotes(playerNotes: PlayerNote[]) {
+  const last = playerNotes.at(-1);
+  if (last) {
+    last.length = last.note.start + last.note.length - last.start;
   }
 }
 
