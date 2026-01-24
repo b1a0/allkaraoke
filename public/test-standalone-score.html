@@ -13,7 +13,7 @@
 </head>
 <body>
   <h1>Standalone Score Calculation Test</h1>
-  <p>This page tests the standalone score calculation with MP3 and ultrastar.txt files.</p>
+  <p>This page tests the standalone score calculation with MP3 and MIDI files.</p>
 
   <div style="margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
     <h3>Upload Files</h3>
@@ -95,7 +95,7 @@
       output.innerHTML = '<p>Running test...</p>';
 
       try {
-        log(`Song source: ${sourceType === 'midi' ? 'MIDI file' : 'Ultrastar TXT'}`);
+        log(`Song source: ${sourceType === 'midi' ? 'MIDI file' : 'no source'}`);
 
         log(`Song loaded: ${song.title} by ${song.artist}`);
         log(`BPM: ${song.bpm}, GAP: ${song.gap}`);
