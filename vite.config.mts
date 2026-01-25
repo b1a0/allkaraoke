@@ -72,6 +72,12 @@ export default defineConfig({
   ],
   base: '/',
   build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        scoreCalc: 'score_calc.html',
+      },
+    },
     outDir: 'build',
     sourcemap: !process.env.FAST_BUILD,
     reportCompressedSize: !process.env.FAST_BUILD,
