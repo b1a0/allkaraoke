@@ -1,13 +1,4 @@
-import { songBeat, NoteType, NotesSection, Song, SongTrack } from 'interfaces';
-
-export interface Note {
-  start: songBeat;
-  length: number;
-  pitch: number;
-  noteName: string;
-  type: NoteType;
-  lyrics: string;
-}
+import { songBeat, NoteType, NotesSection, Song, SongTrack, NoteInclName } from 'interfaces';
 
 interface MidiNote {
   pitch: number;
@@ -247,7 +238,7 @@ export function convertMidiToSong(
   const ticksToBeats = bar / ticksPerBeat;
 
   // Convert MIDI notes to ultrastar notes
-  const songNotes: Note[] = notes.map((midiNote, index) => ({
+  const songNotes: NoteInclName[] = notes.map((midiNote, index) => ({
     start: Math.round(midiNote.startTicks * ticksToBeats),
     length: Math.max(1, Math.round(midiNote.durationTicks * ticksToBeats)),
     pitch: midiNote.pitch,

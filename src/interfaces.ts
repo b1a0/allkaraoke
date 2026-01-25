@@ -10,6 +10,15 @@ export interface Note {
   lyrics: string;
 }
 
+export interface NoteInclName {
+  start: songBeat;
+  length: number;
+  pitch: number;
+  noteName: string;
+  type: NoteType;
+  lyrics: string;
+}
+
 export interface NotesSection {
   // end: never;
   start: songBeat;
