@@ -147,6 +147,7 @@
         log(`Frequency records: ${result.frequencyRecords.length}`);
         log(`Player notes: ${result.playerNotes.length}`);
         log(`Points per beat: ${result.pointsPerBeat.toFixed(2)}`);
+        log(`Song beat length in ms: ${result.beatLength}`);
 
         log('');
         log('Counts:');
@@ -160,6 +161,7 @@
           log('Player notes:');
           logPre(result.playerNotes.map(pn => ({
             start: pn.start.toFixed(2),
+            start_ms: pn.start.toFixed(2)*result.beatLength,
             length: pn.length.toFixed(2),
             distance: pn.distance,
             notePitch: pn.note.pitch,

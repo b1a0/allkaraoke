@@ -279,6 +279,7 @@ export interface StandaloneScoreResult {
   maxCounts: DetailedScore;
   playerNotes: PlayerNote[];
   frequencyRecords: FrequencyRecord[];
+  beatLength: number;
 }
 
 /**
@@ -348,6 +349,9 @@ export async function calculateScoreFromMp3(
   const [pointsPerBeat, counts, maxCounts] = calculateDetailedScoreDataStandalone(playerNotes, track);
   const score = sumDetailedScore(counts) * pointsPerBeat;
 
+  //Add beat length for later ms conversion
+  const beatLength = getSongBeatLength(song);
+
   return {
     score,
     pointsPerBeat,
@@ -355,6 +359,7 @@ export async function calculateScoreFromMp3(
     maxCounts,
     playerNotes,
     frequencyRecords,
+    beatLength,
   };
 }
 
@@ -374,6 +379,9 @@ export function calculateScoreFromFrequencies(
   const [pointsPerBeat, counts, maxCounts] = calculateDetailedScoreDataStandalone(playerNotes, track);
   const score = sumDetailedScore(counts) * pointsPerBeat;
 
+  //Add beat length for later ms conversion
+  const beatLength = getSongBeatLength(song);
+
   return {
     score,
     pointsPerBeat,
@@ -381,5 +389,6 @@ export function calculateScoreFromFrequencies(
     maxCounts,
     playerNotes,
     frequencyRecords,
+    beatLength,
   };
 }
