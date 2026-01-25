@@ -151,14 +151,6 @@ function appendFrequencyToPlayerNotesStandalone(
   }
 }
 
-// Ensure the last note length is finalized at EOF
-function finalizePlayerNotes(playerNotes: PlayerNote[]) {
-  const last = playerNotes.at(-1);
-  if (last) {
-    last.length = last.note.start + last.note.length - last.start;
-  }
-}
-
 /**
  * Decode an MP3 file to PCM audio samples.
  */
