@@ -161,7 +161,7 @@
           log('Player notes:');
           logPre(result.playerNotes.map(pn => ({
             start: pn.start.toFixed(2),
-            start_ms: pn.start.toFixed(2)*result.beatLength,
+            start_ms: Number(pn.start.toFixed(2))*result.beatLength,
             length: pn.length.toFixed(2),
             distance: pn.distance,
             notePitch: pn.note.pitch,
