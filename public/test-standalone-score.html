@@ -171,12 +171,13 @@
 
         // Also show some frequency records for debugging
         log('');
-        log('Sample frequency records (first 20 non-zero):');
-        const nonZeroFreqs = result.frequencyRecords.filter(f => f.frequency > 0).slice(0, 20);
+        log('Sample frequency records:');
+        log('Keep in mind, that midi notes are also heard on audio and might be picked up inbetween.');
+        const nonZeroFreqs = result.frequencyRecords.filter(f => f.frequency > 0);
         logPre(nonZeroFreqs.map(f => ({
           timestamp: f.timestamp.toFixed(1) + 'ms',
           frequency: f.frequency.toFixed(1) + 'Hz',
-          name: frequencyToNoteName(f.frequency.toFixed(1)),
+          name: frequencyToNoteName(f.frequency.toFixed(1)).name,
         })));
 
         log('');
