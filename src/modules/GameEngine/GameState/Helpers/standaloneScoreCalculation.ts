@@ -34,7 +34,7 @@ const getCentDistance = (targetNote: number, freq: number, tolerance: number) =>
 };
 
 export const calcDistanceBetweenPitches = (note: number, targetNote: number, tolerance: number) => {
-  const noteDistance = (((note % 12) - (targetNote % 12) + 18) % 12) - 6;
+  const noteDistance = note - targetNote;
   return Math.abs(noteDistance) <= tolerance ? 0 : noteDistance;
 };
 
