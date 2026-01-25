@@ -60,6 +60,25 @@
       }
     });
 
+    const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    function frequencyToNoteName(freq) {
+      if (freq <= 0) return null;
+
+      // MIDI note number (A4 = 440 Hz → 69)
+      const midi = Math.round(12 * Math.log2(freq / 440) + 69);
+
+      const noteIndex = ((midi % 12) + 12) % 12;
+      const octave = Math.floor(midi / 12) - 1;
+
+      return {
+        midi,
+        note: NOTE_NAMES[noteIndex],
+        octave,
+        name: `${NOTE_NAMES[noteIndex]}${octave}`,
+      };
+    }
+
     midiUpload.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) {
@@ -156,7 +175,8 @@
         const nonZeroFreqs = result.frequencyRecords.filter(f => f.frequency > 0).slice(0, 20);
         logPre(nonZeroFreqs.map(f => ({
           timestamp: f.timestamp.toFixed(1) + 'ms',
-          frequency: f.frequency.toFixed(1) + 'Hz'
+          frequency: f.frequency.toFixed(1) + 'Hz',
+          name: frequencyToNoteName(f.frequency.toFixed(1)),
         })));
 
         log('');
