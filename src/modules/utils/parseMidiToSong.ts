@@ -220,7 +220,7 @@ export function convertMidiToSong(
   const { notes, ticksPerBeat, tempoMicroseconds } = parseMidiFile(arrayBuffer);
 
   // Calculate BPM from tempo
-  const bpm = 60000000 / tempoMicroseconds;
+  const bpm = Math.round(60000000 / tempoMicroseconds);
 
   // For ultrastar format, we use a bar value that makes beat calculations work
   // beatLength = (60 / bpm / bar) * 1000 ms
