@@ -26,7 +26,15 @@
       <label for="midiUpload"><strong>MIDI File:</strong></label><br>
       <input type="file" id="midiUpload" accept=".mid,.midi" style="margin-top: 5px;">
       <span id="songStatus" style="margin-left: 10px; color: #666;"></span>
-      </div>
+    </div>
+    <div style="margin: 10px 0;">
+      <label for="inputLagms"><strong>Input lag in ms:</strong></label><br>
+      <input type="number" id="inputLagms" step="any" />
+    </div>
+    <div style="margin: 10px 0;">
+      <label for="resampleSpeed"><strong>Resample Speed:</strong></label><br>
+      <input type="number" id="resampleSpeed" step="any" />
+    </div>
     </div>
   </div>
 
@@ -46,6 +54,8 @@
     const midiUpload = document.getElementById('midiUpload');
     const mp3Status = document.getElementById('mp3Status');
     const songStatus = document.getElementById('songStatus');
+    const inputLagmsElement = document.getElementById('inputLagms');
+    const resampleSpeedElement = document.getElementById('resampleSpeed');
 
     let uploadedMp3 = null;
     let uploadedSong = null; // Can be from TXT or MIDI
@@ -130,13 +140,21 @@
         log('This may take a moment for pitch detection...');
 
         const startTime = performance.now();
+
+        const inputLagms = inputLagmsElement.valueAsNumber;
+        const finalInputLag = isNaN(inputLagms) ? 0 : inputLagms;
+
+        const resampleSpeed = resampleSpeedElement.valueAsNumber;
+        const finalResampleSpeed = isNaN(resampleSpeed) ? 1 : resampleSpeed;
+
         const result = await calculateScoreFromMp3(
           mp3Source,
           song,
           0,    // track number
           0,    // tolerance (semitones)
-          100,  // input lag ms
-          2048  // fft size
+          finalInputLag,  // input lag ms
+          2048,  // fft size
+          finalResampleSpeed,
         );
         const endTime = performance.now();
 
@@ -194,7 +212,7 @@
     // Run with uploaded files
     document.getElementById('runTest').addEventListener('click', async () => {
       if (!uploadedMp3 || !uploadedSong) {
-        output.innerHTML = '<p class="error">Please upload an MP3 file and either an Ultrastar TXT or MIDI file first.</p>';
+        output.innerHTML = '<p class="error">Please upload an MP3 file and a MIDI file first.</p>';
         return;
       }
       await runScoreCalculation(uploadedMp3, uploadedSong, songSource);
