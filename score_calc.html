@@ -189,6 +189,14 @@
           })));
         }
 
+        if (result.playerNotes.length > 0) {
+          log('');
+          log('Player notes statistics:');
+          logPre(result.statsPlayed);
+          logPre(result.statsPerfect);
+        }
+
+
         // Also show some frequency records for debugging
         log('');
         log('Sample frequency records:');
